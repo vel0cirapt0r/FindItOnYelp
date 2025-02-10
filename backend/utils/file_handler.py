@@ -4,7 +4,6 @@ from datetime import datetime
 from backend.utils.logger import logger
 from backend.models.models import Business, Location, Category, BusinessCategory, BusinessHours, Attribute
 
-logger = logger.getLogger(__name__)
 
 EXPORT_DIR = "exports"
 
