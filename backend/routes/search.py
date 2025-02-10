@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Query, HTTPException
-import logging
+from backend.utils.logger import logger
 from backend.services.yelp_service import fetch_businesses
 
 router = APIRouter()
 
-logger = logging.getLogger(__name__)
+logger = logger.getLogger(__name__)
 
 @router.get("/search")
 def search_businesses(

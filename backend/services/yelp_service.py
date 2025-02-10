@@ -1,9 +1,9 @@
 import requests
-import logging
+from backend.utils.logger import logger
 import time
 from backend.utils.constants import YELP_API_URL, HEADERS
 
-logger = logging.getLogger(__name__)
+logger = logger.getLogger(__name__)
 
 
 def fetch_businesses(

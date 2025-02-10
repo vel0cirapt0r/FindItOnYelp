@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import logging
+from backend.utils.logger import logger
 from backend.routes import search
 from backend.models.db_manager import initialize_db, database_proxy
 from backend.utils.constants import ALLOWED_ORIGINS
 
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+logger.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logger.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
