@@ -1,14 +1,5 @@
-from peewee import (
-    Model, CharField, FloatField, IntegerField, BooleanField,
-    TextField, ForeignKeyField, SqliteDatabase, Proxy
-)
-
-# Using a database proxy for flexibility
-database_proxy = Proxy()
-
-db = SqliteDatabase("businesses.db")
-
-database_proxy.initialize(db)
+from backend.models.db_manager import database_proxy
+from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField
 
 class BaseModel(Model):
     class Meta:
@@ -49,7 +40,7 @@ class Business(BaseModel):
             "phone": self.phone,
             "display_phone": self.display_phone,
             "distance": self.distance,
-            "location": self.location.to_dict() if self.location else None,
+            "location": self.location.to_dict() if hasattr(self, "location") else None,
             "categories": [c.category.category_name for c in self.categories],
             "business_hours": [h.to_dict() for h in self.business_hours],
             "attributes": {a.key: a.value for a in self.attributes}
@@ -107,11 +98,3 @@ class Attribute(BaseModel):
     business = ForeignKeyField(Business, backref="attributes", on_delete="CASCADE")
     key = CharField()
     value = TextField()
-
-def initialize_db():
-    """Connects to the database and creates tables."""
-    db.connect()
-    db.create_tables([Business, Location, Category, BusinessCategory, BusinessHours, Attribute])
-
-if __name__ == "__main__":
-    initialize_db()
