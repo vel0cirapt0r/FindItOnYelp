@@ -7,10 +7,6 @@ from backend.models.db_manager import initialize_db, database_proxy
 from backend.utils.constants import ALLOWED_ORIGINS
 
 
-# Set up logging
-logger.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logger.getLogger(__name__)
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown of the database"""
