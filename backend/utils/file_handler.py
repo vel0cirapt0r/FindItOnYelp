@@ -5,6 +5,7 @@ from backend.utils.logger import logger
 
 EXPORT_DIR = "exports"
 
+
 def save_to_csv(filename: str = None, businesses: list = None):
     """Exports given business data (or all businesses if none provided) to a CSV file."""
     os.makedirs(EXPORT_DIR, exist_ok=True)

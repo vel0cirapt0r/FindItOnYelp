@@ -54,7 +54,8 @@ def export_to_csv(
         if not businesses:
             raise HTTPException(status_code=404, detail="No businesses found to export")
 
-        file_path = save_to_csv(businesses=businesses)
+        file_name = f"yelp_export_{term or 'all'}_{location or 'all'}.csv"
+        file_path = save_to_csv(filename=file_name, businesses=businesses)
         return {"message": "CSV export successful", "file": file_path}
     except Exception as e:
         logger.error(f"Error exporting CSV: {str(e)}")
