@@ -2,14 +2,11 @@ import csv
 import os
 from datetime import datetime
 from backend.utils.logger import logger
-from backend.models.models import Business, Location, Category, BusinessCategory, BusinessHours, Attribute
-
 
 EXPORT_DIR = "exports"
 
-
-def save_to_csv(filename: str = None):
-    """Exports business data from the database to a CSV file."""
+def save_to_csv(filename: str = None, businesses: list = None):
+    """Exports given business data (or all businesses if none provided) to a CSV file."""
     os.makedirs(EXPORT_DIR, exist_ok=True)
 
     if not filename:
@@ -31,21 +28,25 @@ def save_to_csv(filename: str = None):
             ]
             writer.writerow(headers)
 
-            # Query all businesses from the database
-            for business in Business.select():
-                location = business.location  # Get location object
-                categories = ", ".join([c.category.category_name for c in business.categories])
-                business_hours = "; ".join([f"{h.day}:{h.start_time}-{h.end_time}" for h in business.business_hours])
-                attributes = "; ".join([f"{a.key}:{a.value}" for a in business.attributes])
+            # If no businesses provided, fetch all from DB
+            if businesses is None:
+                from backend.models.db_manager import db_manager
+                businesses = db_manager.get_all_businesses()
+
+            for business in businesses:
+                location = business["location"] or {}
+                categories = ", ".join(business.get("categories", []))
+                business_hours = "; ".join([f"{h['day']}:{h['start_time']}-{h['end_time']}" for h in business.get("business_hours", [])])
+                attributes = "; ".join([f"{k}:{v}" for k, v in business.get("attributes", {}).items()])
 
                 writer.writerow([
-                    business.id, business.name, business.alias, business.rating, business.review_count,
-                    business.price, business.phone, business.display_phone, business.is_closed,
-                    business.url, business.distance,
-                    location.address1 if location else "", location.city if location else "",
-                    location.state if location else "", location.zip_code if location else "",
-                    location.country if location else "", location.latitude if location else "",
-                    location.longitude if location else "",
+                    business["id"], business["name"], business["alias"], business["rating"], business["review_count"],
+                    business.get("price", ""), business["phone"], business["display_phone"], business["is_closed"],
+                    business["url"], business["distance"],
+                    location.get("address1", ""), location.get("city", ""),
+                    location.get("state", ""), location.get("zip_code", ""),
+                    location.get("country", ""), location.get("latitude", ""),
+                    location.get("longitude", ""),
                     categories, business_hours, attributes
                 ])
 
