@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from backend.utils.logger import logger
 from backend.routes import search
-from backend.models.db_manager import initialize_db, database_proxy
+from backend.models.db_manager import db_manager
 from backend.utils.constants import ALLOWED_ORIGINS
 
 
@@ -11,10 +11,10 @@ from backend.utils.constants import ALLOWED_ORIGINS
 async def lifespan(app: FastAPI):
     """Handles startup and shutdown of the database"""
     logger.info("Starting application...")
-    initialize_db()  # Initialize database
+    db_manager.initialize()  # Initialize database
     yield  # App runs here
-    if not database_proxy.is_closed():
-        database_proxy.close()
+    if not db_manager.db.is_closed():
+        db_manager.db.close()
         logger.info("Database connection closed.")
 
 # Initialize FastAPI app
