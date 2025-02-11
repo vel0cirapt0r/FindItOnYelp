@@ -2,14 +2,12 @@ import requests
 from backend.utils.logger import logger
 import time
 from backend.utils.constants import YELP_API_URL, HEADERS
-from backend.models.db_manager import db_manager  # Import the DB manager
-
 
 def fetch_businesses(
         term: str, location: str, sort_by: str = "best_match",
         limit: int = 10, max_results: int = 50
 ) -> list[dict]:
-    """Fetch businesses from Yelp API with pagination and store them in the database."""
+    """Fetch businesses from Yelp API with pagination."""
     all_results = []
     offset = 0
     max_results = min(max_results, 1000)  # Yelp API hard limit
@@ -55,20 +53,17 @@ def fetch_businesses(
                     "phone": b.get("phone", ""),
                     "display_phone": b.get("display_phone", ""),
                     "is_closed": b.get("is_closed", False),
-                    "url": b["url"],
+                    "url": b.get("url", ""),
                     "distance": b.get("distance", 0),
-                    "address": ", ".join(b["location"]["display_address"]),
-                    "city": b["location"].get("city", ""),
-                    "state": b["location"].get("state", ""),
-                    "zip_code": b["location"].get("zip_code", ""),
-                    "country": b["location"].get("country", ""),
-                    "latitude": b["coordinates"].get("latitude", 0.0),
-                    "longitude": b["coordinates"].get("longitude", 0.0),
+                    "address": ", ".join(b.get("location", {}).get("display_address", [])),
+                    "city": b.get("location", {}).get("city", ""),
+                    "state": b.get("location", {}).get("state", ""),
+                    "zip_code": b.get("location", {}).get("zip_code", ""),
+                    "country": b.get("location", {}).get("country", ""),
+                    "latitude": b.get("coordinates", {}).get("latitude", 0.0),
+                    "longitude": b.get("coordinates", {}).get("longitude", 0.0),
                     "categories": [c["title"] for c in b.get("categories", [])],
                 }
-
-                # Store business in the database
-                db_manager.insert_business(business_data)
 
                 all_results.append(business_data)
 
