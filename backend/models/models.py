@@ -1,4 +1,4 @@
-from backend.models.db_manager import database_proxy
+from backend.models.database import database_proxy
 from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField
 
 class BaseModel(Model):

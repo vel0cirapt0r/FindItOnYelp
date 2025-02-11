@@ -1,9 +1,7 @@
-from peewee import SqliteDatabase, Proxy
+from peewee import SqliteDatabase
+from backend.models.database import database_proxy
 from backend.models.models import Business, Location, Category, BusinessCategory, BusinessHours, Attribute
 from backend.utils.logger import logger
-
-# Database Proxy for flexibility
-database_proxy = Proxy()
 
 
 class DBManager:
