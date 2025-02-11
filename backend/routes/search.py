@@ -14,7 +14,7 @@ last_search_params = {"term": "", "location": ""}
 
 
 @router.get("/search")
-def search_businesses(
+async def search_businesses(
         term: str = Query(..., title="Search Term", description="Type of business to search for (e.g., pizza, gym)"),
         location: str = Query(..., title="Location", description="City or region (e.g., New York, San Francisco)"),
         sort_by: str = Query("best_match", title="Sort By",
@@ -31,7 +31,7 @@ def search_businesses(
         logger.info(
             f"Searching Yelp for: term='{term}', location='{location}', sort_by='{sort_by}', limit={limit}, max_results={max_results}")
 
-        results = fetch_businesses(term, location, sort_by, limit, max_results)
+        results = await fetch_businesses(term, location, sort_by, limit, max_results)
 
         if not results:
             raise HTTPException(status_code=404, detail="No businesses found")
