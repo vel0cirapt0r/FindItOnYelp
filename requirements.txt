@@ -14,6 +14,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 idna==3.10
+iniconfig==2.0.0
 Jinja2==3.1.5
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -26,12 +27,14 @@ packaging==24.2
 pandas==2.2.3
 peewee==3.17.9
 pillow==11.1.0
+pluggy==1.5.0
 protobuf==5.29.3
 pyarrow==19.0.0
 pydantic==2.10.6
 pydantic_core==2.27.2
 pydeck==0.9.1
 Pygments==2.19.1
+pytest==8.3.4
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytz==2025.1
