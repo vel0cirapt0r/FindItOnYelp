@@ -106,5 +106,21 @@ class DBManager:
         query = Business.select().prefetch(Location, BusinessCategory, Category, BusinessHours, Attribute)
         return [b.to_dict() for b in query]
 
+    def clear_all(self):
+        """Deletes all records from all tables."""
+        try:
+            with self.db.atomic():
+                Attribute.delete().execute()
+                BusinessHours.delete().execute()
+                BusinessCategory.delete().execute()
+                Category.delete().execute()
+                Location.delete().execute()
+                Business.delete().execute()
+
+            logger.info("All database records cleared successfully.")
+        except Exception as e:
+            logger.error(f"Error clearing database: {e}")
+
+
 # Singleton instance
 db_manager = DBManager()
