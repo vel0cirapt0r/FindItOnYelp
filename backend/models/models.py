@@ -1,9 +1,25 @@
 from backend.models.database import database_proxy
-from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField
+from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField, DateTimeField
+from datetime import datetime
+
 
 class BaseModel(Model):
     class Meta:
         database = database_proxy
+
+class SearchTerm(BaseModel):
+    id = IntegerField(primary_key=True)  # Auto-incrementing ID
+    term = CharField(index=True)  # "pizza", "gym", etc.
+    location = CharField(index=True)  # "New York", "Los Angeles"
+    sort_by = CharField(default="best_match")  # "best_match", "rating", "review_count", "distance"
+    limit = IntegerField(default=10)  # Number of results requested per Yelp API call
+    max_results = IntegerField(default=50)  # Max results to fetch using pagination
+    created_at = DateTimeField(default=datetime.now())  # Track when the search happened
+
+    class Meta:
+        indexes = (
+            (("term", "location", "sort_by", "limit", "max_results"), True),  # Unique constraint
+        )
 
 class Business(BaseModel):
     id = CharField(primary_key=True)
@@ -45,6 +61,11 @@ class Business(BaseModel):
             "business_hours": [h.to_dict() for h in self.business_hours],
             "attributes": {a.key: a.value for a in self.attributes}
         }
+
+class BusinessSearch(BaseModel):
+    search_term = ForeignKeyField(SearchTerm, backref="businesses", on_delete="CASCADE")
+    business = ForeignKeyField(Business, backref="searches", on_delete="CASCADE")
+    searched_at = DateTimeField(default=datetime.now())
 
 class Location(BaseModel):
     business = ForeignKeyField(Business, backref="location", unique=True, on_delete="CASCADE")
