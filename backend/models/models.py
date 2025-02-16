@@ -1,6 +1,7 @@
 from backend.models.database import database_proxy
 from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField, DateTimeField
 from datetime import datetime
+from backend.utils.utils import format_datetime
 
 
 class BaseModel(Model):
@@ -20,6 +21,18 @@ class SearchTerm(BaseModel):
         indexes = (
             (("term", "location", "sort_by", "limit", "max_results"), True),  # Unique constraint
         )
+
+    def to_dict(self):
+        """Convert SearchTerm model instance to dictionary"""
+        return {
+            "id": self.id,
+            "term": self.term,
+            "location": self.location,
+            "sort_by": self.sort_by,
+            "limit": self.limit,
+            "max_results": self.max_results,
+            "created_at": format_datetime(self.created_at)  # Ensure datetime is JSON serializable
+        }
 
 class Business(BaseModel):
     id = CharField(primary_key=True)
