@@ -50,7 +50,8 @@ class DBManager:
 
     ### 🔹 Database Operations ###
 
-    def is_business_cached(self, business_id: str) -> bool:
+    @staticmethod
+    def is_business_cached(business_id: str) -> bool:
         """Checks if a business already exists in the database."""
         return Business.select().where(Business.id == business_id).exists()
 
@@ -117,7 +118,8 @@ class DBManager:
         except Exception as e:
             logger.error(f"Error inserting business: {e}")
 
-    def insert_search_term(self, term, location, sort_by="best_match", limit=10, max_results=50):
+    @staticmethod
+    def insert_search_term(term, location, sort_by="best_match", limit=10, max_results=50):
         """Stores a search term in the database (if not already present)."""
         try:
             search_term, created = SearchTerm.get_or_create(
@@ -132,7 +134,8 @@ class DBManager:
             logger.error(f"Error inserting search term: {e}")
             return None
 
-    def is_search_cached(self, term, location, sort_by="best_match", limit=10, max_results=50) -> bool:
+    @staticmethod
+    def is_search_cached(term, location, sort_by="best_match", limit=10, max_results=50) -> bool:
         """Checks if a search term exists in the cache (i.e., has stored businesses)."""
         return SearchTerm.select().where(
             (SearchTerm.term == term) &
@@ -160,7 +163,8 @@ class DBManager:
             logger.error(f"Error fetching businesses for search: {e}")
             return []
 
-    def get_all_businesses(self):
+    @staticmethod
+    def get_all_businesses():
         """Retrieves all businesses with related data."""
         query = Business.select().prefetch(Location, BusinessCategory, Category, BusinessHours, Attribute)
         return [b.to_dict() for b in query]
