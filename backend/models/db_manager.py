@@ -119,7 +119,7 @@ class DBManager:
             logger.error(f"Error inserting business: {e}")
 
     @staticmethod
-    def insert_search_term(term, location, sort_by="best_match", limit=10, max_results=50):
+    def insert_search_term(term, location, sort_by="best_match", limit=10, max_results=50) -> "SearchTerm | None":
         """Stores a search term in the database (if not already present)."""
         try:
             search_term, created = SearchTerm.get_or_create(
