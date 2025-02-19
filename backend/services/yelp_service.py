@@ -1,81 +1,58 @@
 import httpx
 import asyncio
-from backend.utils.logger import logger
-from backend.utils.constants import YELP_API_URL, HEADERS
 
-async def fetch_businesses(
-        term: str, location: str, sort_by: str = "best_match",
-        limit: int = 10, max_results: int = 50
-) -> list[dict]:
-    """Fetch businesses from Yelp API with pagination (async version)."""
+from backend.models.db_manager import DBManager
+from backend.utils.constants import YELP_API_URL, HEADERS
+from backend.utils.utils import parse_yelp_response, handle_rate_limit, log_request_error
+
+
+async def fetch_yelp_data(term: str, location: str, sort_by: str, limit: int, max_results: int) -> list[dict]:
+    """Fetch businesses from Yelp API with pagination."""
     all_results = []
     offset = 0
-    max_results = min(max_results, 1000)  # Yelp API hard limit
+    max_results = min(max_results, 1000)  # Yelp API limit
 
     async with httpx.AsyncClient() as client:
         while len(all_results) < max_results:
             remaining = max_results - len(all_results)
-            batch_limit = min(remaining, 50)  # Yelp API allows max 50 per request
-
-            params = {
-                "term": term,
-                "location": location,
-                "sort_by": sort_by,
-                "limit": batch_limit,
-                "offset": offset
-            }
-
-            logger.debug(f"Yelp API query parameters: {params}")
+            batch_limit = min(remaining, limit, 50)
 
             try:
-                response = await client.get(YELP_API_URL, headers=HEADERS, params=params, timeout=10.0)
+                response = await client.get(YELP_API_URL, headers=HEADERS, params={
+                    "term": term,
+                    "location": location,
+                    "sort_by": sort_by,
+                    "limit": batch_limit,
+                    "offset": len(all_results)
+                }, timeout=10.0)
 
-                if response.status_code == 429:
-                    logger.warning("Rate limit exceeded. Sleeping for 60 seconds...")
-                    await asyncio.sleep(60)  # Non-blocking sleep
+                if handle_rate_limit(response):
+                    await asyncio.sleep(60)
                     continue
 
-                response.raise_for_status()  # Raise error for non-200 responses
-                data = response.json()
-
-                businesses = data.get("businesses", [])
+                response.raise_for_status()
+                businesses = parse_yelp_response(response.json())
 
                 if not businesses:
-                    break  # No more results to fetch
+                    break
 
-                for b in businesses:
-                    business_data = {
-                        "id": b["id"],
-                        "name": b["name"],
-                        "alias": b.get("alias", ""),
-                        "rating": b.get("rating", 0),
-                        "review_count": b.get("review_count", 0),
-                        "price": b.get("price", ""),
-                        "phone": b.get("phone", ""),
-                        "display_phone": b.get("display_phone", ""),
-                        "is_closed": b.get("is_closed", False),
-                        "url": b.get("url", ""),
-                        "distance": b.get("distance", 0),
-                        "address": ", ".join(b.get("location", {}).get("display_address", [])),
-                        "city": b.get("location", {}).get("city", ""),
-                        "state": b.get("location", {}).get("state", ""),
-                        "zip_code": b.get("location", {}).get("zip_code", ""),
-                        "country": b.get("location", {}).get("country", ""),
-                        "latitude": b.get("coordinates", {}).get("latitude", 0.0),
-                        "longitude": b.get("coordinates", {}).get("longitude", 0.0),
-                        "categories": [c["title"] for c in b.get("categories", [])],
-                    }
-
-                    all_results.append(business_data)
-
+                all_results.extend(businesses)
                 offset += batch_limit
 
-            except httpx.TimeoutException:
-                logger.error("Yelp API request timed out")
-            except httpx.HTTPStatusError as e:
-                logger.error(f"HTTP error occurred: {str(e)}")
-            except httpx.RequestError as e:
-                logger.error(f"Yelp API request failed: {str(e)}")
+            except Exception as e:
+                log_request_error(e)
                 break
 
     return all_results
+
+async def get_or_fetch_businesses(term: str, location: str, sort_by: str = "best_match", limit: int = 50, max_results: int = 50):
+    """Checks the database cache, otherwise fetches from Yelp API."""
+    if DBManager.is_search_cached(term, location, sort_by, limit, max_results):
+        return DBManager.get_businesses_for_search(term=term, location=location, sort_by=sort_by)
+
+    businesses = await fetch_yelp_data(term, location, sort_by, limit, max_results)
+    if businesses:
+        search_term = DBManager.insert_search_term(term, location, sort_by, limit, max_results)
+        for business in businesses:
+            DBManager.insert_business(business, search_term)
+    return businesses
