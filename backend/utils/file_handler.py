@@ -5,9 +5,8 @@ from backend.utils.logger import logger
 
 EXPORT_DIR = "exports"
 
-
-def save_to_csv(filename: str = None, businesses: list = None):
-    """Exports given business data (or all businesses if none provided) to a CSV file."""
+def save_to_csv(filename: str, businesses: list):
+    """Exports given business data to a CSV file."""
     os.makedirs(EXPORT_DIR, exist_ok=True)
 
     if not filename:
@@ -29,16 +28,11 @@ def save_to_csv(filename: str = None, businesses: list = None):
             ]
             writer.writerow(headers)
 
-            # If no businesses provided, fetch all from DB
-            if businesses is None:
-                from backend.models.db_manager import db_manager
-                businesses = db_manager.get_all_businesses()
-
             for business in businesses:
                 location = business["location"] or {}
                 categories = ", ".join(business.get("categories", []))
-                business_hours = "; ".join([f"{h['day']}:{h['start_time']}-{h['end_time']}" for h in business.get("business_hours", [])])
-                attributes = "; ".join([f"{k}:{v}" for k, v in business.get("attributes", {}).items()])
+                business_hours = business.get("business_hours", "")
+                attributes = business.get("attributes", "")
 
                 writer.writerow([
                     business["id"], business["name"], business["alias"], business["rating"], business["review_count"],
