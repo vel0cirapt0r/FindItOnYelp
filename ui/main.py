@@ -2,7 +2,7 @@ import streamlit as st
 import httpx
 import pandas as pd
 
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = "http://localhost:8000/api"
 
 def search_businesses(term, location, sort_by, limit, max_results):
     """Fetch businesses from the FastAPI backend using httpx."""
