@@ -51,6 +51,7 @@ class Business(BaseModel):
 
     def to_dict(self):
         """Converts the model instance to a dictionary for API responses."""
+        location = self.location.get() if self.location else None
         return {
             "id": self.id,
             "alias": self.alias,
@@ -64,8 +65,8 @@ class Business(BaseModel):
             "phone": self.phone,
             "display_phone": self.display_phone,
             "distance": self.distance,
-            "location": self.location.to_dict() if hasattr(self, "location") else None,
-            "categories": [c.category.category_name for c in self.categories],
+            "location": location.to_dict() if location else None,
+            "categories": [c.category.title for c in self.categories],
             "business_hours": [h.to_dict() for h in self.business_hours],
             "attributes": {a.key: a.value for a in self.attributes}
         }

@@ -1,8 +1,9 @@
 import httpx
 import asyncio
 
-from backend.models.db_manager import DBManager
+from backend.models.db_manager import db_manager
 from backend.utils.constants import YELP_API_URL, HEADERS
+from backend.utils.logger import logger
 from backend.utils.utils import parse_yelp_response, handle_rate_limit, log_request_error
 
 
@@ -27,6 +28,7 @@ async def fetch_yelp_data(term: str, location: str, sort_by: str, limit: int, ma
                 }, timeout=10.0)
 
                 if handle_rate_limit(response):
+                    logger.info("waiting for 60 seconds")
                     await asyncio.sleep(60)
                     continue
 
@@ -34,6 +36,7 @@ async def fetch_yelp_data(term: str, location: str, sort_by: str, limit: int, ma
                 businesses = parse_yelp_response(response.json())
 
                 if not businesses:
+                    logger.info("No businesses found in Yelp API response!")
                     break
 
                 all_results.extend(businesses)
@@ -47,12 +50,12 @@ async def fetch_yelp_data(term: str, location: str, sort_by: str, limit: int, ma
 
 async def get_or_fetch_businesses(term: str, location: str, sort_by: str = "best_match", limit: int = 50, max_results: int = 50):
     """Checks the database cache, otherwise fetches from Yelp API."""
-    if DBManager.is_search_cached(term, location, sort_by, limit, max_results):
-        return DBManager.get_businesses_for_search(term=term, location=location, sort_by=sort_by)
+    if db_manager.is_search_cached(term=term, location=location, sort_by=sort_by, limit=limit, max_results=max_results):
+        return db_manager.get_businesses_for_search(term=term, location=location, sort_by=sort_by)
 
-    businesses = await fetch_yelp_data(term, location, sort_by, limit, max_results)
+    businesses = await fetch_yelp_data(term=term, location=location, sort_by=sort_by, limit=limit, max_results=max_results)
     if businesses:
-        search_term = DBManager.insert_search_term(term, location, sort_by, limit, max_results)
+        search_term = db_manager.insert_search_term(term=term, location=location, sort_by=sort_by, limit=limit, max_results=max_results)
         for business in businesses:
-            DBManager.insert_business(business, search_term)
+            db_manager.insert_business(business, search_term)
     return businesses

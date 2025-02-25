@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 from backend.utils.logger import logger
 from backend.services.yelp_service import get_or_fetch_businesses
 from backend.utils.file_handler import save_to_csv
-from backend.models.db_manager import DBManager
+from backend.models.db_manager import db_manager
 import re
 
 router = APIRouter()
@@ -25,6 +25,7 @@ async def search_businesses(
         results = await get_or_fetch_businesses(term, location, sort_by, limit, max_results)
 
         if not results:
+            logger.error(f"No businesses found for {term} in {location}")
             raise HTTPException(status_code=404, detail="No businesses found")
 
         return {"businesses": results}
@@ -46,7 +47,8 @@ def export_to_csv(
 ):
     """Exports the latest search results from the database to a CSV file."""
     try:
-        businesses = DBManager.get_businesses_for_search(term, location, sort_by)[:max_results]
+        businesses = db_manager.get_businesses_for_search(term, location, sort_by)[:max_results]
+        logger.info(f"Fetched {len(businesses)} businesses from cache for {term} in {location}")
         if not businesses:
             raise HTTPException(status_code=400, detail="No search results to export. Perform a search first.")
 

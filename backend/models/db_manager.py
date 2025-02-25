@@ -1,4 +1,4 @@
-from peewee import SqliteDatabase
+from peewee import SqliteDatabase, IntegrityError
 from backend.models.database import database_proxy
 from backend.models.models import Business, Location, Category, BusinessCategory, BusinessHours, Attribute, SearchTerm, \
     BusinessSearch
@@ -70,56 +70,80 @@ class DBManager:
                     name=business_data["name"],
                     alias=business_data["alias"],
                     image_url=business_data.get("image_url"),
-                    rating=business_data["rating"],
-                    review_count=business_data["review_count"],
-                    price=business_data.get("price", None),
-                    phone=business_data["phone"],
-                    display_phone=business_data["display_phone"],
-                    is_closed=business_data["is_closed"],
-                    url=business_data["url"],
-                    distance=business_data["distance"]
+                    rating=business_data.get("rating"),
+                    review_count=business_data.get("review_count"),
+                    price=business_data.get("price"),
+                    phone=business_data.get("phone"),
+                    display_phone=business_data.get("display_phone"),
+                    is_closed=business_data.get("is_closed"),
+                    url=business_data.get("url"),
+                    distance=business_data.get("distance")
                 )
 
-                # Link Business to SearchTerm (New Feature)
+                # Link Business to SearchTerm
                 BusinessSearch.create(search_term=search_term, business=business)
 
                 # Insert location
+                location_data = business_data.get("location", {})
                 Location.create(
                     business=business,
-                    address1=business_data["address"],
-                    city=business_data["city"],
-                    state=business_data["state"],
-                    zip_code=business_data["zip_code"],
-                    country=business_data["country"],
-                    latitude=business_data["latitude"],
-                    longitude=business_data["longitude"]
+                    address1=location_data.get("address1"),
+                    address2=location_data.get("address2"),
+                    address3=location_data.get("address3"),
+                    city=location_data.get("city"),
+                    state=location_data.get("state"),
+                    zip_code=location_data.get("zip_code"),
+                    country=location_data.get("country"),
+                    latitude=location_data.get("latitude"),
+                    longitude=location_data.get("longitude")
                 )
 
                 # Insert categories
-                for category_name in business_data["categories"]:
-                    category, _ = Category.get_or_create(category_name=category_name)
-                    BusinessCategory.create(business=business, category=category)
+                for category in business_data.get("categories", []):
+                    category_obj, _ = Category.get_or_create(
+                        alias=category["alias"],
+                        defaults={"title": category["title"]}
+                    )
+                    BusinessCategory.create(business=business, category=category_obj)
 
                 # Insert business hours
-                for hours in business_data.get("hours", []):
-                    BusinessHours.create(
-                        business=business,
-                        day=hours["day"],
-                        start_time=hours["start_time"],
-                        end_time=hours["end_time"],
-                        is_overnight=hours.get("is_overnight", False)
-                    )
+                business_hours_data = business_data.get("business_hours", [])
+                for business_hour in business_hours_data:
+                    try:
+                        BusinessHours.create(
+                            business=business,
+                            day=business_hour["day"],
+                            start_time=business_hour["start_time"],
+                            end_time=business_hour["end_time"],
+                            is_overnight=business_hour["is_overnight"]
+                        )
+                    except IntegrityError as e:
+                        logger.error(f"BusinessHours insert failed: {e}")
 
                 # Insert attributes
-                for key, value in business_data.get("attributes", {}).items():
-                    Attribute.create(business=business, key=key, value=value)
+                attributes = business_data.get("attributes", {})
+                for key, value in attributes.items():
+                    try:
+                        if isinstance(value, dict):
+                            # Handle nested dictionaries (e.g., 'ambience', 'business_parking')
+                            for sub_key, sub_value in value.items():
+                                Attribute.create(
+                                    business=business,
+                                    key=f"{key}_{sub_key}",
+                                    value=str(sub_value)
+                                )
+                        else:
+                            Attribute.create(business=business, key=key, value=str(value))
+                    except IntegrityError as e:
+                        logger.error(f"Attribute insert failed: {e}")
 
-            logger.info(f"Inserted business: {business_data['name']}")
+            logger.info(f"Inserted business to database: {business_data['name']}")
+
         except Exception as e:
             logger.error(f"Error inserting business: {e}")
 
     @staticmethod
-    def insert_search_term(term, location, sort_by="best_match", limit=10, max_results=50) -> "SearchTerm | None":
+    def insert_search_term(term, location, sort_by, limit, max_results) -> "SearchTerm | None":
         """Stores a search term in the database (if not already present)."""
         try:
             search_term, created = SearchTerm.get_or_create(
@@ -147,7 +171,7 @@ class DBManager:
 
     def get_businesses_for_search(self, term, location, sort_by="best_match"):
         """Fetches businesses from cache if the search term exists."""
-        if not self.is_search_cached(term, location, sort_by):
+        if self.is_search_cached(term, location, sort_by):
             logger.info(f"No cached data for {term} in {location}.")
             return None  # Indicate that fresh data needs to be fetched
 
