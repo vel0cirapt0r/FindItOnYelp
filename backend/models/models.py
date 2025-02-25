@@ -1,6 +1,7 @@
 from backend.models.database import database_proxy
 from peewee import Model, CharField, FloatField, IntegerField, BooleanField, TextField, ForeignKeyField, DateTimeField
 from datetime import datetime
+
 from backend.utils.utils import format_datetime
 
 
@@ -48,12 +49,6 @@ class Business(BaseModel):
     display_phone = CharField(null=True)
     distance = FloatField()
 
-    # Explicitly define related fields to prevent pycharm warnings
-    location = None  # Will be set by ForeignKeyField
-    categories = None
-    business_hours = None
-    attributes = None
-
     def to_dict(self):
         """Converts the model instance to a dictionary for API responses."""
         return {
@@ -82,7 +77,7 @@ class BusinessSearch(BaseModel):
 
 class Location(BaseModel):
     business = ForeignKeyField(Business, backref="location", unique=True, on_delete="CASCADE")
-    address1 = CharField()
+    address1 = CharField(null=True)
     address2 = CharField(null=True)
     address3 = CharField(null=True)
     city = CharField(index=True)
@@ -107,7 +102,8 @@ class Location(BaseModel):
         }
 
 class Category(BaseModel):
-    category_name = CharField(unique=True, index=True)
+    alias = CharField(unique=True)
+    title = CharField()
 
 class BusinessCategory(BaseModel):
     business = ForeignKeyField(Business, backref="categories", on_delete="CASCADE")
