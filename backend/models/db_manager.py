@@ -60,7 +60,17 @@ class DBManager:
         try:
             # Avoid duplicates
             if self.is_business_cached(business_data["id"]):
-                logger.info(f"Business {business_data['name']} already exists, skipping.")
+                logger.info(f"Business {business_data['name']} already exists, ensuring link to search term.")
+
+                # Ensure business is linked to this search term
+                existing_link = BusinessSearch.get_or_none(
+                    (BusinessSearch.search_term == search_term) &
+                    (BusinessSearch.business == business_data["id"])
+                )
+
+                if not existing_link:
+                    BusinessSearch.get_or_create(search_term=search_term, business=business_data["id"])
+
                 return
 
             with self.db.atomic():
